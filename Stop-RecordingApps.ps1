@@ -65,7 +65,7 @@ foreach ($entry in $targets) {
                 Stop-Process -Id $p.Id -Force -ErrorAction Stop
                 $terminated.Add("$($entry.Display) [$($p.ProcessName).exe, PID $($p.Id)]")
             } catch {
-                $terminated.Add("$($entry.Display) [$($p.ProcessName).exe, PID $($p.Id)] — CHYBA: $($_.Exception.Message)")
+                $terminated.Add("$($entry.Display) [$($p.ProcessName).exe, PID $($p.Id)] - CHYBA: $($_.Exception.Message)")
             }
         }
     }
