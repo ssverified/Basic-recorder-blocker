@@ -1,9 +1,10 @@
 #Requires -Version 5.1
+# ASCII-only file: works after download from GitHub / wrong default encoding in Windows PowerShell 5.1
 <#
 .SYNOPSIS
-  Okamžitě ukončí běžné nahrávací / klipovací programy a vypíše stav.
+  Stops common recording / clipping apps and prints status.
 .NOTES
-  Spusť v PowerShellu:  powershell -ExecutionPolicy Bypass -File ".\Stop-RecordingApps.ps1"
+  Run: powershell -NoProfile -ExecutionPolicy Bypass -File ".\Stop-RecordingApps.ps1"
 #>
 
 try {
@@ -14,12 +15,12 @@ try {
 Write-Host ""
 Write-Host "  MCRybar" -ForegroundColor Cyan
 Write-Host "  Made with " -NoNewline -ForegroundColor White
-Write-Host ([char]0x2764) -NoNewline -ForegroundColor Red   # ❤
+Write-Host ([char]0x2764) -NoNewline -ForegroundColor Red
 Write-Host " Liafen" -ForegroundColor Magenta
 Write-Host "  ----------------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-# Zobrazovaný název | jméno procesu (bez .exe), jak ho vidí Get-Process -Name
+# Display label | process name(s) for Get-Process -Name (no .exe)
 $targets = @(
     @{ Display = "OBS Studio (64-bit)";       Names = @("obs64") }
     @{ Display = "OBS Studio (32-bit)";       Names = @("obs32") }
@@ -46,49 +47,5 @@ $targets = @(
     @{ Display = "Open Broadcaster (legacy)"; Names = @("obs") }
 )
 
-$terminated = [System.Collections.Generic.List[string]]::new()
-$notRunning = [System.Collections.Generic.List[string]]::new()
-
-foreach ($entry in $targets) {
-    $foundAny = $false
-    foreach ($procName in $entry.Names) {
-        $procs = $null
-        try {
-            $procs = Get-Process -Name $procName -ErrorAction SilentlyContinue
-        } catch {
-            $procs = $null
-        }
-        if (-not $procs) { continue }
-        $foundAny = $true
-        foreach ($p in @($procs)) {
-            try {
-                Stop-Process -Id $p.Id -Force -ErrorAction Stop
-                $terminated.Add("$($entry.Display) [$($p.ProcessName).exe, PID $($p.Id)]")
-            } catch {
-                $terminated.Add("$($entry.Display) [$($p.ProcessName).exe, PID $($p.Id)] - CHYBA: $($_.Exception.Message)")
-            }
-        }
-    }
-    if (-not $foundAny) {
-        $namesJoined = $entry.Names -join ", "
-        $notRunning.Add("$($entry.Display) (hledáno: $namesJoined)")
-    }
-}
-
-Write-Host "=== TERMINOVÁNO ($($terminated.Count)) ===" -ForegroundColor Green
-if ($terminated.Count -eq 0) {
-    Write-Host "  (žádný z cílových procesů neběžel)" -ForegroundColor DarkGray
-} else {
-    foreach ($line in $terminated) {
-        Write-Host "  $line" -ForegroundColor Green
-    }
-}
-
-Write-Host ""
-Write-Host "=== NEBĚŽÍ / NENALEZENO ($($notRunning.Count)) ===" -ForegroundColor DarkGray
-foreach ($line in $notRunning) {
-    Write-Host "  $line" -ForegroundColor DarkGray
-}
-
-Write-Host ""
-Write-Host "Hotovo." -ForegroundColor White
+$terminated = New-Object System.Collections.Generic.List[string]
+$notRunning = New-Object System.Collections.Generic.List[
