@@ -47,5 +47,50 @@ $targets = @(
     @{ Display = "Open Broadcaster (legacy)"; Names = @("obs") }
 )
 
-$terminated = New-Object System.Collections.Generic.List[string]
-$notRunning = New-Object System.Collections.Generic.List[
+$terminated = New-Object System.Collections.ArrayList
+$notRunning = New-Object System.Collections.ArrayList
+
+foreach ($entry in $targets) {
+    $foundAny = $false
+    foreach ($procName in $entry.Names) {
+        $procs = $null
+        try {
+            $procs = Get-Process -Name $procName -ErrorAction SilentlyContinue
+        } catch {
+            $procs = $null
+        }
+        if (-not $procs) { continue }
+        $foundAny = $true
+        foreach ($p in @($procs)) {
+            try {
+                Stop-Process -Id $p.Id -Force -ErrorAction Stop
+                [void]$terminated.Add(('{0} [{1}.exe, PID {2}]' -f $entry.Display, $p.ProcessName, $p.Id))
+            } catch {
+                $err = $_.Exception.Message -replace "`r|`n", ' '
+                [void]$terminated.Add(('{0} [{1}.exe, PID {2}] - ERROR: {3}' -f $entry.Display, $p.ProcessName, $p.Id, $err))
+            }
+        }
+    }
+    if (-not $foundAny) {
+        $namesJoined = $entry.Names -join ', '
+        [void]$notRunning.Add(('{0} (searched: {1})' -f $entry.Display, $namesJoined))
+    }
+}
+
+Write-Host ('=== TERMINATED ({0}) ===' -f $terminated.Count) -ForegroundColor Green
+if ($terminated.Count -eq 0) {
+    Write-Host '  (none of the target processes were running)' -ForegroundColor DarkGray
+} else {
+    foreach ($line in $terminated) {
+        Write-Host ('  {0}' -f $line) -ForegroundColor Green
+    }
+}
+
+Write-Host ""
+Write-Host ('=== NOT RUNNING / NOT FOUND ({0}) ===' -f $notRunning.Count) -ForegroundColor DarkGray
+foreach ($line in $notRunning) {
+    Write-Host ('  {0}' -f $line) -ForegroundColor DarkGray
+}
+
+Write-Host ""
+Write-Host 'Done.' -ForegroundColor White
